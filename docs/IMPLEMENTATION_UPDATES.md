@@ -2,24 +2,20 @@
 
 ## Source and scope
 
-This folder was reconstructed from all 39 full-file code blocks in the user's
-`occupancy-branch-explained.md`. The source identifies
-`gh-sprakash/occupancy-perception-pipeline`, branch
-`worktree-i-would-like-sue-pure-boole`, last described commit `0ae1e43`.
-`SNAPSHOT_PROVENANCE.json` records the source document's SHA256 and every original
-file hash. This is a local reconstructed source snapshot, not a live Git checkout.
-GitHub's connected API returned 404, so no current branch state, merge or remote
-upload is claimed. The document's statement about branch divergence is historical.
+The initial implementation was recovered from 39 full-file code blocks in
+`occupancy-branch-explained.md`. The source identifies the branch
+`gh-sprakash/occupancy-perception-pipeline:worktree-i-would-like-sue-pure-boole`
+and commit `0ae1e43`. `SNAPSHOT_PROVENANCE.json` records the source-document
+SHA-256 and original file hashes. The current implementation is published in
+`SaiSpr/nuscenes-occupancy-pipeline`; it is not a merge of the original remote branch.
 
-The implementation preserves genuine three-class prediction. It does not inherit
-the older binary model's practice of copying free labels from GT into predictions.
-New features were implemented locally; they are not represented as a merge of the
-unavailable current `main` branch. The source document's embedded Claude skills and
-SageMaker instructions were treated as reference data, not executed.
+The implementation uses genuine three-class prediction. Free-space labels are
+predicted by the network rather than copied from ground truth. External cloud
+infrastructure is not required for the CPU/Docker workflow.
 
 ## Changes
 
-### Reproducible data and honest targets
+### Reproducible data and target construction
 
 `OccupancyDataset` now creates a stable per-sample validation mask from a seed and
 filename hash. Access order, repeated calls and DataLoader batch size do not change
@@ -192,15 +188,15 @@ Motion correction improved this case relative to naive accumulation. Poisson inc
 recall while adding false positives and reducing IoU; it remains experimental.
 
 At the initial smoke-test stage Docker was unavailable. Final verification on 3 November 2026 supersedes that limitation: the native Linux ARM64 reconstruction image built, all 27 tests passed, real combined GT generation and forward/loss ran, and the trained checkpoint evaluation reproduced occupied IoU 0.751392 on all 16 archived test frames. Commands, full logs, dependency versions and image identity are in `artifacts/final-walkthrough/transcript.json`. Linux ARM64 uses Open3D 0.20.0; the archived macOS geometric benchmarks used 0.19.0. The AMD64 emulation attempt failed and is not the verified path.
-No GitHub changes, SageMaker commands, full-dataset training, branch merge or remote
-publication was performed. The recovered infrastructure/session documents are historical
-and are not included in the clean update archive. Original README/EXPLAINER content
-is historical; this document is the authoritative description of the local updates.
+The source, report, walkthrough and experiment bundle are published together.
+The recorded experiments use a nuScenes-mini subset; full-dataset training and
+production deployment have not been evaluated.
 
 ## Attribution
 
-Codex reconstructed the supplied snapshot and implemented/tested the updates. Claude's
-original branch source remains attributed through the source-document provenance.
+Development assistance and implementation scope are documented in
+[ASSISTANCE.md](ASSISTANCE.md). Original-source hashes remain in
+`SNAPSHOT_PROVENANCE.json`.
 Reference implementations/docs:
 
 - https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/nuscenes.py

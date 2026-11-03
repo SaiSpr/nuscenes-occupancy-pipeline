@@ -41,7 +41,7 @@ def pct(x):return f'{100*x:.2f}%'
 
 p('Occupancy Perception Pipeline','TitleR')
 p('Design report | Motion correction + Poisson reconstruction','H1R')
-p('3 November 2026 | Local submission snapshot','SmallR')
+p('4 November 2026 | Implementation and validation report','SmallR')
 h('1. Objective and scope')
 p('Build a modular nuScenes perception pipeline that generates occupancy supervision from real LiDAR and demonstrates a learning-ready data flow, model forward pass and loss computation. The submission profile <b>keeps both motion correction and Poisson reconstruction enabled</b>.')
 p('The learning demonstration is <b>GT mask completion</b>: a model reconstructs an occupancy grid from a copy with 30% of occupied input cells hidden. It is not camera-based prediction or inference from a fresh raw LiDAR scan. Training is supplementary evidence; the assignment does not require a trained model.')
@@ -55,7 +55,7 @@ table([['Stage / module','Responsibility and output'],
  ['Learning / models, training','Tiny CNN or U-Net; CE/BCE/focal losses, scene-disjoint evaluation and development-only inference tuning.']], [168,343])
 h('Selected submission design')
 p('Up to ten scans (the keyframe plus nine past scans) are requested. Motion correction handles moving objects; Poisson reconstructs the remaining static geometry. These methods solve different problems and are retained together. Box-volume filling is disabled in <b>configs/submission.yaml</b> to keep this combination interpretable.')
-p('The supplied source snapshot is identified as gh-sprakash/occupancy-perception-pipeline, branch worktree-i-would-like-sue-pure-boole. It was reconstructed from the user-supplied full-file walkthrough; no live branch merge or GitHub upload is claimed.','SmallR')
+p('The implementation is published in SaiSpr/nuscenes-occupancy-pipeline. The original branch snapshot and file hashes are documented in SNAPSHOT_PROVENANCE.json; the current project is not a merge of the original remote branch.','SmallR')
 
 page('2. Ground-truth generation and reconstruction')
 h('Geometry and temporal alignment')
@@ -84,7 +84,7 @@ a=g['aggregate']['motion_only'];b=g['aggregate']['motion_plus_poisson']
 h('Direct paired comparison: motion correction + Poisson')
 p('To isolate Poisson, both variants use identical motion-corrected past scans and no box filling. The current LiDAR scan is withheld as the sparse observed reference. Of 16 selected frames, only two have usable past scans under the conservative track policy; results below use exactly those same two frames.')
 table([['Variant','IoU','Precision','Recall','Wrongly free'],['Motion correction only',pct(a['occupied_iou']),pct(a['precision']),pct(a['recall']),str(a['wrongly_free'])],['Motion + Poisson',pct(b['occupied_iou']),pct(b['precision']),pct(b['recall']),str(b['wrongly_free'])]], [190,76,82,81,82])
-p('Poisson adds 20 true-positive occupied cells and 18 false positives in this comparison. The small IoU/recall increase comes with a small precision decrease. This is geometric scan agreement on two frames, not a model-accuracy claim. Both methods remain enabled by the selected submission design; the earlier minimum-sample gate was an assistant-chosen heuristic, not an assignment requirement.')
+p('Poisson adds 20 true-positive occupied cells and 18 false positives in this comparison. The small IoU/recall increase comes with a small precision decrease. This is geometric scan agreement on two frames, not a model-accuracy claim. Both methods remain enabled by the selected submission design; the earlier minimum-sample gate was an experimental development heuristic, not an assignment requirement.')
 h('Run the combined GT profile')
 code("python -m pip install -e '.[dev,reconstruction,visualization]'\npython scripts/generate_gt.py --config configs/submission.yaml \\\n  --nuscenes-root /path/to/nuscenes --split mini_val \\\n  --max-samples 24 --output-dir artifacts/submission/val\npython -m pytest")
 p('nuScenes data must be supplied explicitly and remains outside the image/repository. Synthetic runs require --synthetic. Open3D is required when the combined profile is selected; missing dependencies fail clearly.','SmallR')
@@ -96,17 +96,17 @@ code("docker build --target reconstruction \\\n  -t occupancy-pipeline:submissio
 p(('The reconstruction image was built and exercised successfully: regression tests, real combined GT, forward/loss, checkpoint evaluation and prediction plots. Full commands, dependency versions and image identity are in artifacts/final-walkthrough/transcript.json. ' if docker_verified else 'Docker verification remains incomplete. ')+'The base image and direct core dependencies are pinned; optional transitive dependencies are not fully locked.','SmallR')
 p('Linux ARM64 uses Open3D 0.20.0 for wheel compatibility; the archived macOS geometric benchmarks used 0.19.0. Reconstruction across versions is not claimed bit-identical. AMD64 emulation on this Mac failed and is not the verified execution path.','SmallR')
 
-page('5. Validation, tradeoffs and submission status')
+page('5. Validation, tradeoffs and deliverables')
 h('Verification evidence')
 p('<b>27 regression tests passed.</b> They cover stable validation masks, scene separation, real three-class confusion matrices, fixed loss weights, unknown-cell binary gradients, stale-file exclusion, U-Net outputs, Poisson evidence isolation, input-preserving inference, checkpoint decisions, exact benchmark sample counts and the combined submission configuration.')
 p('Real nuScenes runs exercised motion correction and Open3D reconstruction. Six model training runs completed. The exported recommended checkpoint independently reproduced the benchmark confusion matrix on all 16 test frames. Archive checksums validate packaged files. Evidence is stored under artifacts/combined-validation and artifacts/accuracy-benchmark-v2.')
 h('Assumptions and limitations')
 p('<b>Sparse reference:</b> unseen cells are not complete scene truth. Valid hidden geometry may be penalized by scan-agreement tests. <b>Motion:</b> interpolation and box assignment are approximate; the conservative skip policy reduces temporal coverage. <b>Poisson:</b> normals, sampling density and unannotated movers can create false surfaces. <b>Resolution:</b> 1 m voxels lose thin structures and small obstacles.')
 p('<b>Learning scope:</b> the network completes a GT-derived partial grid. It is not a deployed perception system. Preserving input assumes reliable occupied evidence and would preserve input false positives. The benchmark is a small mini subset; a larger independent scene-level test and sensor-noise study are needed before broad accuracy claims.')
-h('Deliverables and remaining checks')
-p('The package includes source, configuration, tests, Dockerfile, README, this report, recorded results and a trained demonstration checkpoint. '+('The accompanying MP4 is an edited walkthrough of actual Docker commands and plots, with synthesized Samantha narration, captions and full logs; it passed full decode verification. ' if video_verified else 'The final walkthrough video remains outstanding. ')+'Evaluator access to the private repository must still be arranged; a local ZIP does not establish remote publication.')
+h('Implemented deliverables')
+p('The package includes source, configuration, tests, Dockerfile, README, this report, recorded results and a trained demonstration checkpoint. '+('The accompanying MP4 is an edited walkthrough of actual Docker commands and plots, with synthesized Samantha narration, captions and full logs; it passed full decode verification. ' if video_verified else 'The final walkthrough video remains outstanding. ')+'The repository contains the modular code, design report, walkthrough and complete experiment bundle.')
 h('Attribution and source provenance')
-p('The original branch source was supplied in a Claude-generated complete-code walkthrough. Codex reconstructed the snapshot, implemented the subsequent updates, ran the local experiments and generated this report. The code is substantially LLM-assisted and should be personally reviewed and explained by the submitting author. Original file hashes are retained in SNAPSHOT_PROVENANCE.json.')
+p('LLM assistance was used for the initial implementation, subsequent code changes, experiment automation and documentation. The initial snapshot was supplied in a Claude-generated walkthrough; Codex implemented and validated the extensions. Development scope is recorded in docs/ASSISTANCE.md; original hashes are retained in SNAPSHOT_PROVENANCE.json.')
 h('References')
 p('1. <link href="https://github.com/nutonomy/nuscenes-devkit">nuScenes devkit</link>: dataset schema, sensor transforms and annotation conventions.<br/>2. <link href="https://www.open3d.org/docs/release/tutorial/geometry/surface_reconstruction.html">Open3D surface reconstruction documentation</link>: Poisson API, density trimming and extrapolation limitations.<br/>3. <link href="https://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version5.7/">Screened Poisson reference implementation</link>: reconstruction from oriented points.<br/>4. Local reproducible evidence: docs/ACCURACY_RESULTS.md; artifacts/combined-validation/comparison.json; benchmark plan and results JSON.','SmallR')
 
@@ -115,7 +115,7 @@ def decor(canvas,doc):
     w,h=A4
     canvas.setStrokeColor(colors.HexColor('#d9e2eb'));canvas.line(42,38,w-42,38)
     canvas.setFont('Helvetica',8);canvas.setFillColor(colors.HexColor('#607186'))
-    canvas.drawString(42,25,'Occupancy Pipeline | Design report | 3 November 2026')
+    canvas.drawString(42,25,'Occupancy Pipeline | Design report | 4 November 2026')
     canvas.drawRightString(w-42,25,f'{doc.page}')
 OUT.parent.mkdir(parents=True,exist_ok=True)
 SimpleDocTemplate(str(OUT),pagesize=A4,rightMargin=42,leftMargin=42,topMargin=42,bottomMargin=48,

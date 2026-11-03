@@ -15,7 +15,7 @@ from occ_pipeline.utils.seed import set_seed
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run placeholder DL forward/loss pipeline.")
+    parser = argparse.ArgumentParser(description="Run an occupancy model forward pass and compute its loss.")
     parser.add_argument("--config", default="configs/default.yaml")
     parser.add_argument("--gt-dir", default=None)
     parser.add_argument("--device", default=None, choices=["cpu", "cuda", "auto"])

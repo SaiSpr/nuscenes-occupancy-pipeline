@@ -58,7 +58,7 @@ Decision bias is an IoU-oriented classification setting, not calibrated uncertai
 Six support-distance/density-trim combinations were compared using development scans only. A gate was fixed before evaluation: at least three paired development scans, a positive pooled IoU difference and no negative per-scan difference.
 Best development candidate: support=1.0 m, density trim=0.3, paired scans=2, IoU difference=+0.000380.
 On 2 eligible held-out scans: annotation-proposal IoU=0.669378, Poisson-proposal IoU=0.671194; recall 0.941137 -> 0.947528, precision 0.698627 -> 0.697105.
-**Historical assistant-defined promotion gate: False.** This was an engineering heuristic, not an assignment rule or significance test. The final user-selected submission profile keeps both motion correction and Poisson enabled, with proposals isolated from measured supervision. See the combined validation results and design report.
+**Development promotion heuristic: False.** This was an engineering heuristic, not an assignment rule or significance test. The selected submission profile keeps both motion correction and Poisson enabled, with proposals isolated from measured supervision. See the combined validation results and design report.
 These are sparse geometric agreement scores, separate from the learned completion-model scores. Poisson cannot improve the model when its proposals are intentionally excluded from model inputs and supervision.
 
 ## Evidence and reproducibility

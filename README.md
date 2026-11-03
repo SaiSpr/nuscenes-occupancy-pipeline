@@ -5,9 +5,9 @@ A modular occupancy ground-truth and learning demonstration for the **End-to-End
 - [Design report](DESIGN_REPORT.pdf): five pages covering architecture, geometry, learning, evidence, tradeoffs and limitations.
 - [Walkthrough video](walkthrough.mp4): about 6½ minutes, edited from actual Docker execution with synthesized narration.
 - [Complete submission bundle](submission.zip): source snapshot, trained checkpoints, derived grids, results, Docker logs, captions and checksums.
-- [Detailed reproduction and handoff guide](docs/SUBMISSION.md).
+- [Reproduction guide](docs/SUBMISSION.md).
 
-This private repository contains the final published source. The report records the local snapshot before GitHub publication. The project is substantially LLM-assisted; the submitting author should review and explain its implementation and design choices. [Source provenance](SNAPSHOT_PROVENANCE.json) and [implementation history](docs/IMPLEMENTATION_UPDATES.md) identify the recovered Claude branch and subsequent Codex work.
+The repository contains the implementation, configuration, tests and recorded validation results. [Implementation details](docs/IMPLEMENTATION_UPDATES.md) describe the changes; [development assistance](docs/ASSISTANCE.md) and [source provenance](SNAPSHOT_PROVENANCE.json) document attribution.
 
 ## Selected design
 
@@ -30,7 +30,7 @@ Source, configuration and tests are directly browsable. Checkpoints and derived 
 python3 scripts/unpack_evidence.py
 ```
 
-This verifies all 191 bundled file checksums, then restores only `artifacts/` and `output/`. It does not overwrite repository source. Raw nuScenes files are excluded and must be obtained separately under the dataset's terms.
+This verifies the bundled SHA-256 checksums, then restores only `artifacts/` and `output/`. It does not overwrite repository source. Raw nuScenes files are excluded and must be obtained separately under the dataset's terms.
 
 ## Docker: reproducible runtime
 
@@ -97,7 +97,7 @@ The video renderer is a separate macOS authoring tool requiring the installed Sa
 | `src/occ_pipeline/utils/` | Storage, atomic writes and deterministic seeds |
 | `scripts/` | Generation, inspection, training, evaluation, comparisons and packaging |
 | `tests/` | Geometry, evidence isolation, scene separation, masking, models and metrics |
-| `docs/` | Design changes, accuracy protocol and submission instructions |
+| `docs/` | Implementation details, accuracy protocol and reproduction instructions |
 
 ## Stored data contract
 
@@ -124,6 +124,12 @@ A separate two-frame geometric comparison measured **67.28% IoU** for motion cor
 
 Further limits include coarse 1 m voxels, approximate object-box interpolation, reduced temporal coverage under conservative track filtering, possible reconstructed false surfaces and only two test scenes. Preserving known occupied input also preserves input false positives. The assignment emphasizes design and integration; a trained model is supplementary evidence.
 
-## Submission
+## Implemented deliverables
 
-Share this private repository with the evaluator's GitHub account, plus the design report and walkthrough. The ZIP is a convenient transport copy. Evaluator access has not been granted automatically; their GitHub username is required. Do not submit credentials or raw dataset files.
+- Modular nuScenes ingestion, coordinate transforms and temporal occupancy generation.
+- Motion correction and separate Poisson surface proposals, enabled in the selected profile.
+- CNN and U-Net completion models, loss computation and scene-disjoint evaluation.
+- Docker environment with 27 passing regression tests and recorded real-data execution.
+- Design report, narrated walkthrough, trained checkpoints and checksummed experiment evidence.
+
+Raw nuScenes data is supplied separately. The design report and accuracy results describe the measured behavior and its limitations.

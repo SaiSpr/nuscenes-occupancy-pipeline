@@ -16,7 +16,7 @@ def main():
     for folder in ('src','tests','configs','scripts'):
         files.update(p for p in (root/folder).rglob('*') if p.is_file() and '__pycache__' not in p.parts)
     for name in ('README.md','pyproject.toml','Dockerfile','.dockerignore','.gitignore','SNAPSHOT_PROVENANCE.json',
-                 'docs/IMPLEMENTATION_UPDATES.md','docs/ACCURACY_RESULTS.md','docs/SUBMISSION.md'):
+                 'docs/IMPLEMENTATION_UPDATES.md','docs/ACCURACY_RESULTS.md','docs/SUBMISSION.md','docs/ASSISTANCE.md'):
         files.add(root/name)
     benchmark=root/'artifacts/accuracy-benchmark-v2'
     required=('plan.json','results.json','tests.txt','execution.log','accuracy-comparison.png',

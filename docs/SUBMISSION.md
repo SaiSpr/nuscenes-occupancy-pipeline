@@ -1,15 +1,8 @@
-# Submission guide
+# Reproduction guide
 
-Submit a private GitHub repository invitation, the brief design report and the walkthrough video. The ZIP is a transport copy of the source and evidence; it does not itself give evaluators access to a private repository.
+The project includes the modular implementation, combined GT profile, Docker environment, design report, walkthrough and experimental evidence. The [design report](../DESIGN_REPORT.pdf) and [video](../walkthrough.mp4) are available directly; `submission.zip` includes checkpoints, derived grids, captions and complete execution logs.
 
-## What to share
-
-1. Private repository URL and access for the evaluator's GitHub account.
-2. `output/pdf/Occupancy_Pipeline_Design_Report.pdf`: approach, architecture, tradeoffs, results, limitations and attribution.
-3. `artifacts/final-walkthrough/walkthrough.mp4`: the final implementation's walkthrough. This is an edited presentation of actual recorded Docker commands and result images, narrated with macOS Samantha synthesized speech. It is not a live screen capture. Captions, narration text and unabridged execution logs accompany it.
-4. Optionally, the checksummed submission ZIP as a convenient downloadable copy.
-
-No credentials or raw nuScenes files belong in the repository. Dataset access remains subject to nuScenes terms. A small set of derived target grids is supplied for reproducing the completion demonstration.
+After cloning, run `python3 scripts/unpack_evidence.py` to verify and restore the bundled artifacts before checkpoint evaluation. Raw nuScenes data is provided separately.
 
 ## Run from a clean Docker environment
 
@@ -50,6 +43,6 @@ Read `transcript.json` for command arguments, complete output, exit status and d
 
 Read `artifacts/accuracy-benchmark-v2/plan.json` and `results.json` for fixed scene partitions, the three-seed architecture comparison and development-only decision fitting. The checkpoint performs GT-derived occupancy completion; it is not a camera or fresh raw-LiDAR prediction model. Poisson's separate two-frame geometric comparison is too small to establish general prediction accuracy.
 
-## Before sending
+## Development attribution
 
-Confirm that the actual submission repository contains this final source, report and video, and that the evaluator can open it. A locally completed archive does not establish that the remote repository has been updated. The original branch was reconstructed from the supplied Claude walkthrough; see `SNAPSHOT_PROVENANCE.json`. Changes, experiments, report and generated walkthrough are substantially LLM-assisted and require the submitting author's review.
+[ASSISTANCE.md](ASSISTANCE.md) records development assistance and the origin of the source snapshot. `SNAPSHOT_PROVENANCE.json` retains the original file hashes.

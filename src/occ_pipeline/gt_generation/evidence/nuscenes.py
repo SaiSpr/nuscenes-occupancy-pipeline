@@ -1,7 +1,7 @@
 """Small raw-table adapter for the official nuScenes schema.
 
 The public devkit's reverse indices (sample['data']) are not stored on disk.
-We reconstruct them from sample_data -> calibrated_sensor -> sensor.
+The adapter reconstructs them from sample_data -> calibrated_sensor -> sensor.
 """
 
 import json

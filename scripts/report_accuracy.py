@@ -92,7 +92,7 @@ def main():
         if held:
             b=held['box_proposals'];q=held['poisson_proposals']
             lines += [f"On {q['samples_scored']} eligible held-out scans: annotation-proposal IoU={b['occupied_iou']:.6f}, Poisson-proposal IoU={q['occupied_iou']:.6f}; recall {b['recall']:.6f} -> {q['recall']:.6f}, precision {b['precision']:.6f} -> {q['precision']:.6f}."]
-    lines += [f"**Historical assistant-defined promotion gate: {pdecision['enable_by_default']}.** This was an engineering heuristic, not an assignment rule or significance test. The final user-selected submission profile keeps both motion correction and Poisson enabled, with proposals isolated from measured supervision. See the combined validation results and design report.",
+    lines += [f"**Development promotion heuristic: {pdecision['enable_by_default']}.** This was an engineering heuristic, not an assignment rule or significance test. The selected submission profile keeps both motion correction and Poisson enabled, with proposals isolated from measured supervision. See the combined validation results and design report.",
               'These are sparse geometric agreement scores, separate from the learned completion-model scores. Poisson cannot improve the model when its proposals are intentionally excluded from model inputs and supervision.','',
               '## Evidence and reproducibility','',
               f'- `{root}/plan.json`: predeclared selections, models, seeds and decision grid.',
