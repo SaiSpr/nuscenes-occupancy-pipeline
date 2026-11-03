@@ -1,274 +1,129 @@
 # nuScenes Occupancy Pipeline
 
-Private submission repository: **SaiSpr/nuscenes-occupancy-pipeline**.
+A modular occupancy ground-truth and learning demonstration for the **End-to-End Perception for Ground Robotics** assignment.
 
-- [Design report](DESIGN_REPORT.pdf): five-page architecture, evidence, tradeoffs and limitations.
-- [Walkthrough video](walkthrough.mp4): about 6½ minutes, edited from actual Docker commands with synthesized narration.
-- [Complete submission bundle](submission.zip): source snapshot, checkpoint, derived grids, experiment results, full Docker logs, captions and checksums.
-- [Submission and reproduction guide](docs/SUBMISSION.md).
+- [Design report](DESIGN_REPORT.pdf): five pages covering architecture, geometry, learning, evidence, tradeoffs and limitations.
+- [Walkthrough video](walkthrough.mp4): about 6½ minutes, edited from actual Docker execution with synthesized narration.
+- [Complete submission bundle](submission.zip): source snapshot, trained checkpoints, derived grids, results, Docker logs, captions and checksums.
+- [Detailed reproduction and handoff guide](docs/SUBMISSION.md).
 
-Source, configuration and tests are available directly in this repository. To restore the bundled experiment artifacts at the paths used by the commands below, run:
+This private repository contains the final published source. The report records the local snapshot before GitHub publication. The project is substantially LLM-assisted; the submitting author should review and explain its implementation and design choices. [Source provenance](SNAPSHOT_PROVENANCE.json) and [implementation history](docs/IMPLEMENTATION_UPDATES.md) identify the recovered Claude branch and subsequent Codex work.
+
+## Selected design
+
+`configs/submission.yaml` enables **motion correction and Poisson reconstruction together**, with box-volume filling disabled.
+
+1. Read real nuScenes scene, scan, calibration, pose and annotation tables.
+2. Transform each scan through its own sensor and ego poses into the keyframe ego frame.
+3. Match and interpolate tracked object boxes, then align moving-object points. Reposed points contribute hits only, without artificial free-space rays.
+4. Generate measured occupied/free/unknown evidence with clipped 3D ray traversal; apply hits last.
+5. Reconstruct supported static Poisson surfaces as separately identified proposals in unknown cells. Never overwrite measured evidence or silently include proposals in learning targets.
+6. Load a partial occupied grid, run a CNN or U-Net, and compute the appropriate binary or three-class loss and metrics.
+
+The learning task is **GT-derived occupancy mask completion**, not camera prediction or fresh raw-LiDAR inference. The three-class U-Net hides 30% of occupied input cells and predicts unknown, occupied and free classes. No complete ground-truth free-space channel is supplied to the model.
+
+## Restore experiment evidence
+
+Source, configuration and tests are directly browsable. Checkpoints and derived data are kept in the supplied ZIP. From the repository root:
 
 ```sh
 python3 scripts/unpack_evidence.py
 ```
 
-This verifies every archived file against its bundled SHA-256 digest, then restores only `artifacts/` and `output/`; it does not replace repository source files. Raw nuScenes data is not included. Native Linux ARM64 Docker verification passed all **27 tests**, real combined GT generation, forward/loss and checkpoint evaluation. The checkpoint reproduced **75.14% occupied IoU** on 16 archived test frames. This is GT-derived occupancy completion, not raw sensor prediction; Poisson proposals are excluded from learned supervision.
+This verifies all 191 bundled file checksums, then restores only `artifacts/` and `output/`. It does not overwrite repository source. Raw nuScenes files are excluded and must be obtained separately under the dataset's terms.
 
-The project is substantially LLM-assisted. Review the provenance, assistance disclosure and limitations in the report before submission. Private repository access for the evaluator must be arranged separately.
+## Docker: reproducible runtime
 
----
-
-## Selected submission profile: both methods enabled
-
-Use `configs/submission.yaml` to run **motion correction and Poisson reconstruction together**.
-Box-volume filling is disabled in this profile to isolate the two methods. Poisson
-surface proposals remain identifiable and separate from measured learning targets.
-This is the selected design configuration; earlier optional/default-promotion
-wording describes historical experiments and does not disable this explicit profile.
-
-The [five-page design report](output/pdf/Occupancy_Pipeline_Design_Report.pdf) explains
-the architecture, GT logic, code modules, learning task, experiments, tradeoffs and
-assistance disclosure. A direct no-box-fill comparison measured geometric IoU
-67.28% for motion correction and 67.47% for motion plus Poisson on two eligible
-held-out scans. These are geometric agreement scores, separate from the model's
-74.99% mean completion IoU.
+Build natively for your CPU architecture:
 
 ```sh
-python scripts/generate_gt.py --config configs/submission.yaml \
-  --nuscenes-root /path/to/nuscenes --split mini_val \
-  --max-samples 24 --output-dir artifacts/submission/val
+docker build --target reconstruction -t occupancy-pipeline:submission .
+docker run --rm occupancy-pipeline:submission python -m pytest
 ```
 
-> **November 2026 local update:** This source snapshot was restored from the supplied
-> branch walkthrough and extended with scene-disjoint evaluation, a U-Net, temporal
-> GT and optional Poisson proposals. Read [the update report](docs/IMPLEMENTATION_UPDATES.md)
-> for current commands, validation evidence and limitations. Original instructions
-> below describe the older branch; GT filenames now include fingerprints and a manifest.
+The reconstruction target includes Open3D, plotting and report dependencies. Linux ARM64 uses Open3D 0.20.0 because no matching 0.19.0 CPython 3.11 wheel was available; other supported platforms retain 0.19.0. The archived macOS geometric comparisons used 0.19.0. Reconstruction across versions is not claimed bit-identical. AMD64 emulation on this ARM Mac failed; native Linux ARM64 was verified.
 
-# Occupancy Perception Pipeline
-
-CPU-first starter project for generating occupancy ground truth (GT) from nuScenes-style LiDAR data and validating a training-ready deep learning pipeline.
-
-The goal is project design, not model quality. The repository demonstrates:
-
-- Occupancy GT generation from point clouds.
-- A nuScenes-mini adapter for real data.
-- A deterministic synthetic mode for laptop and Docker demos.
-- A PyTorch `Dataset`, tiny 3D CNN baseline, loss, and metrics.
-- Tests, Docker, and a design report.
-
-## Design Scope
-
-Initial GT is binary LiDAR occupancy:
-
-```text
-1 = occupied voxel observed by LiDAR
-0 = unknown / not observed
-```
-
-The code intentionally does not claim that `0` means definitely free. Sparse LiDAR only proves observed surfaces unless ray casting or multi-frame free-space reasoning is added.
-
-Default laptop grid:
-
-```text
-x: [-40m, 40m)
-y: [-40m, 40m)
-z: [-3m, 3m)
-voxel_size: 1.0m
-shape: [Z, Y, X] = [6, 80, 80]
-```
-
-This is small enough to run comfortably on CPU and still exercises the full pipeline.
-
-## Quick Start: Local Laptop Demo
-
-From this project directory:
-
-```bash
-python scripts/generate_gt.py --config configs/default.yaml --synthetic --max-samples 3
-python scripts/run_pipeline.py --config configs/default.yaml
-python scripts/inspect_gt.py artifacts/occupancy_gt/synthetic_0000.npz
-pytest
-```
-
-Expected flow:
-
-```text
-synthetic point cloud
--> voxel occupancy GT .npz files
--> OccupancyDataset
--> tiny 3D CNN forward pass
--> BCE loss + IoU/precision/recall metrics
-```
-
-## Real nuScenes-mini Run
-
-Install optional dependencies:
-
-```bash
-pip install -e ".[nuscenes,dev]"
-```
-
-Then run with a mounted or local nuScenes root:
-
-```bash
-python scripts/generate_gt.py \
-  --config configs/default.yaml \
-  --nuscenes-root /path/to/nuscenes \
-  --version v1.0-mini \
-  --split mini_train \
-  --max-samples 5
-
-python scripts/run_pipeline.py --config configs/default.yaml
-```
-
-The nuScenes root should contain folders such as `samples/`, `sweeps/`, `maps/`, and `v1.0-mini/`.
-
-## Docker
-
-For the final motion-correction + Poisson profile, complete submission commands,
-walkthrough provenance and evaluator handoff, see [Submission guide](docs/SUBMISSION.md).
-Use the `reconstruction` target; the default image below is the lighter synthetic runtime.
-
-Build:
-
-```bash
-docker build -t occupancy-perception .
-```
-
-Synthetic end-to-end demo:
-
-```bash
-docker run --rm \
-  -v "$PWD/artifacts:/app/artifacts" \
-  occupancy-perception \
-  python scripts/generate_gt.py --synthetic --max-samples 3 --output-dir artifacts/occupancy_gt
-
-docker run --rm \
-  -v "$PWD/artifacts:/app/artifacts" \
-  occupancy-perception \
-  python scripts/run_pipeline.py --gt-dir artifacts/occupancy_gt
-```
-
-Real nuScenes-mini demo:
-
-```bash
-docker run --rm \
-  -v /path/to/nuscenes:/data/nuscenes:ro \
-  -v "$PWD/artifacts:/app/artifacts" \
-  occupancy-perception \
-  python scripts/generate_gt.py --nuscenes-root /data/nuscenes --max-samples 5
-```
-
-## Repository Layout
-
-```text
-configs/default.yaml
-scripts/generate_gt.py
-scripts/run_pipeline.py
-scripts/inspect_gt.py
-src/occ_pipeline/
-  data/
-  geometry/
-  gt_generation/
-  models/
-    occupancy_cnn.py
-  training/
-  utils/
-  visualization/
-tests/
-docs/design_report.md
-Dockerfile
-```
-
-## Generated Artifact Format
-
-Each `.npz` file contains:
-
-```text
-occupancy: uint8 [Z, Y, X]
-point_counts: uint16 [Z, Y, X]
-metadata: JSON string
-```
-
-Metadata includes grid range, voxel size, point counts, occupancy ratio, sample token, source, and runtime.
-
-## Metrics
-
-GT generation metrics:
-
-- input point count
-- finite point count
-- in-range and out-of-range point count
-- occupied voxel count
-- occupancy ratio
-- runtime per sample
-
-Pipeline metrics:
-
-- BCE loss
-- IoU
-- precision
-- recall
-- predicted occupancy ratio
-- target occupancy ratio
-
-These metrics validate the data and pipeline contract. They are not presented as model-performance claims.
-
-## CNN Baseline
-
-The configured model is `tiny_3d_cnn`, a small `Conv3d -> ReLU -> Conv3d -> ReLU -> Conv3d` network.
-
-It is included to prove the deep learning path is real:
-
-```text
-occupancy tensor [B, 1, Z, Y, X]
--> TinyOccupancyCNN
--> logits [B, 1, Z, Y, X]
--> BCE loss and occupancy metrics
-```
-
-It is intentionally small for laptop/4GB-GPU demos and is not presented as a trained model.
-
-## Edge Cases Handled
-
-- Points with NaN or infinite coordinates are ignored.
-- Points outside the configured voxel range are counted and skipped.
-- Max-boundary points are excluded with half-open ranges `[min, max)`.
-- Empty point clouds produce valid all-zero occupancy grids.
-- Class imbalance is handled in the demo loss with capped positive weighting.
-- CUDA is optional; CPU is the default for reproducibility.
-
-## LLM Disclosure
-
-This starter implementation was scaffolded with LLM assistance. The candidate should review, understand, and be prepared to defend every design choice before submission.
-
-
-### Measuring and improving completion accuracy
-
-The accuracy extension adds a controlled baseline/U-Net comparison, fixed evaluation
-masks across optimizer seeds, development-only decision fitting, and an input-evidence
-preservation rule. See [measured results](docs/ACCURACY_RESULTS.md) for the actual
-numbers and their limits. This evaluates **GT mask completion**, not raw-sensor or
-camera prediction. Poisson geometry is evaluated separately and stays optional
-unless its development evidence gate passes.
+After restoring evidence, evaluate the supplied trained checkpoint:
 
 ```sh
-# Three seeds, fixed scene-disjoint train/development/test selections.
-python scripts/benchmark_accuracy.py --data-root /path/to/nuscenes \
-  --output artifacts/accuracy-benchmark-v2 --epochs 30 --seeds 42,43,44
-python scripts/benchmark_poisson.py --data-root /path/to/nuscenes \
-  --plan artifacts/accuracy-benchmark-v2/plan.json --output artifacts/poisson-benchmark
-python scripts/report_accuracy.py
-
-# Fit a decision setting for another trained checkpoint using its recorded dev set.
-# The script rejects different scenes/samples and preserves the original checkpoint.
-python scripts/tune_decision.py --checkpoint artifacts/checkpoints/checkpoint_best.pt \
-  --dev-dir artifacts/development --output artifacts/checkpoints/checkpoint_decision.pt
+mkdir -p artifacts/reproduction
+docker run --rm \
+  -v "$PWD/artifacts/accuracy-benchmark-v2:/evidence:ro" \
+  -v "$PWD/artifacts/reproduction:/outputs" \
+  occupancy-pipeline:submission python scripts/evaluate.py \
+  --checkpoint /evidence/recommended-checkpoint.pt \
+  --gt-dir /evidence/test --output /outputs/checkpoint-evaluation.json
 ```
 
-The resulting decision checkpoint is consumed automatically by `evaluate.py` and
-`visualize.py`. The occupied-score offset optimizes development IoU; it does not
-provide calibrated uncertainty. Preserving input occupancy assumes those input
-measurements are reliable, and can retain false positives from noisy sensors.
+For real GT generation, supply the nuScenes root containing `samples/`, `sweeps/` and `v1.0-mini/`:
+
+```sh
+docker run --rm \
+  -v /absolute/path/to/nuscenes:/data/nuscenes:ro \
+  -v "$PWD/artifacts/reproduction:/outputs" \
+  occupancy-pipeline:submission python scripts/generate_gt.py \
+  --config configs/submission.yaml --nuscenes-root /data/nuscenes \
+  --split mini_val --max-samples 3 --output-dir /outputs/targets
+```
+
+The lighter default image supports a clearly labeled synthetic GT demo:
+
+```sh
+docker build -t occupancy-pipeline:runtime .
+docker run --rm occupancy-pipeline:runtime
+```
+
+## Local development
+
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e '.[dev,reconstruction,visualization]'
+python -m pytest
+```
+
+The video renderer is a separate macOS authoring tool requiring the installed Samantha voice, `say`, `afinfo`, Pillow and `imageio-ffmpeg==0.6.0`. It is not needed for the Docker perception runtime. The delivered video includes its synthesized-narration disclosure, captions and complete command transcript.
+
+## Repository modules
+
+| Location | Responsibility |
+|---|---|
+| `configs/` | Grid, data, GT and learning profiles |
+| `src/occ_pipeline/data/` | Raw-table adapter, temporal scans and completion dataset |
+| `src/occ_pipeline/geometry/` | Coordinate transformations |
+| `src/occ_pipeline/gt_generation/` | Voxel grids, ray evidence, motion correction, Poisson proposals and manifests |
+| `src/occ_pipeline/models/` | Tiny CNN and height-preserving U-Net |
+| `src/occ_pipeline/training/` | Losses, training, inference decisions and pooled metrics |
+| `src/occ_pipeline/utils/` | Storage, atomic writes and deterministic seeds |
+| `scripts/` | Generation, inspection, training, evaluation, comparisons and packaging |
+| `tests/` | Geometry, evidence isolation, scene separation, masking, models and metrics |
+| `docs/` | Design changes, accuracy protocol and submission instructions |
+
+## Stored data contract
+
+The default grid spans x/y `[-40,40)` m and z `[-3,3)` m at 1 m resolution. Saved arrays use `[Z,Y,X] = [6,80,80]`.
+
+| Field | Meaning |
+|---|---|
+| `occupancy` | `uint8`: 0 unknown, 1 occupied, 2 observed free |
+| `point_counts` | Saturated `uint16` point counts |
+| `provenance` | Unknown, ray-free, measured-hit or motion-reposed-hit origin |
+| `proposal_kind` | Separate box/Poisson proposal identifier |
+| `proposed_occupancy` | Measured labels plus inferred proposals; excluded from current training targets |
+| `metadata` | Grid, configuration, input hashes, transforms, used/skipped scans and statistics |
+
+Fingerprint filenames and exact manifests prevent stale targets from silently entering a new generation.
+
+## Recorded validation and limitations
+
+Native Linux ARM64 Docker verification passed **all 27 tests**, real-data GT generation with both methods active, forward/loss computation, checkpoint evaluation and prediction visualization. Full commands, exit statuses, dependencies and image identity are in `artifacts/final-walkthrough/transcript.json` after evidence restoration.
+
+The recommended checkpoint reproduced **75.14% occupied IoU** on all 16 archived test frames. The three-seed comparison averaged **74.99%** for the U-Net and **73.63%** for the CNN under the same development-selection protocol. The benchmark used 42 training frames from seven scenes, six development frames from one other scene, and 16 test frames from two official mini validation scenes. Earlier smoke runs inspected some validation frames, so this is not a pristine external test. [Detailed protocol and results](docs/ACCURACY_RESULTS.md).
+
+A separate two-frame geometric comparison measured **67.28% IoU** for motion correction alone and **67.47%** with Poisson: recall increased and precision decreased. This small sparse-reference comparison does not establish general prediction accuracy. Poisson proposals are excluded from current model inputs and supervision, so the model scores must not be attributed to Poisson.
+
+Further limits include coarse 1 m voxels, approximate object-box interpolation, reduced temporal coverage under conservative track filtering, possible reconstructed false surfaces and only two test scenes. Preserving known occupied input also preserves input false positives. The assignment emphasizes design and integration; a trained model is supplementary evidence.
+
+## Submission
+
+Share this private repository with the evaluator's GitHub account, plus the design report and walkthrough. The ZIP is a convenient transport copy. Evaluator access has not been granted automatically; their GitHub username is required. Do not submit credentials or raw dataset files.
