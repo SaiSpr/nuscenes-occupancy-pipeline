@@ -104,7 +104,9 @@ def main():
               '- CPU macOS execution was verified. Consult `artifacts/final-walkthrough/transcript.json` for the final Docker verification status; a Dockerfile alone is not proof of execution. Full-dataset benchmarks remain unverified.',
               '- See `IMPLEMENTATION_UPDATES.md` for the inherited pipeline and assistance disclosure.','']
     plot_results(r,root/'accuracy-comparison.png')
-    lines += [f"![Held-out completion comparison](../{root}/accuracy-comparison.png)",'']
+    import shutil
+    shutil.copy2(root/'accuracy-comparison.png',Path(__file__).resolve().parents[1]/'accuracy-comparison.png')
+    lines += ["![Held-out completion comparison](../accuracy-comparison.png)",'']
     path=Path(a.report);path.parent.mkdir(parents=True,exist_ok=True);path.write_text('\n'.join(lines))
     print(json.dumps({'report':str(path),'recommended_model':selected['model'],'seed':selected['seed'],'raw_gain':raw_gain,'paired_selected_gain':final_gain},indent=2))
 

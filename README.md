@@ -3,7 +3,7 @@
 A modular occupancy ground-truth and learning demonstration for the **End-to-End Perception for Ground Robotics** assignment.
 
 - [Design report](DESIGN_REPORT.pdf): five pages covering architecture, geometry, learning, evidence, tradeoffs and limitations.
-- [Walkthrough video](walkthrough.mp4): about 6½ minutes, edited from actual Docker execution with synthesized narration.
+- [Walkthrough video](walkthrough.mp4): silent visual walkthrough of actual Docker execution, with explanatory captions.
 - [Complete submission bundle](submission.zip): source snapshot, trained checkpoints, derived grids, results, Docker logs, captions and checksums.
 - [Reproduction guide](docs/SUBMISSION.md).
 
@@ -24,13 +24,15 @@ The learning task is **GT-derived occupancy mask completion**, not camera predic
 
 ## Restore experiment evidence
 
-Source, configuration and tests are directly browsable. Checkpoints and derived data are kept in the supplied ZIP. From the repository root:
+Source, configuration and tests are directly browsable. Checkpoints and derived data are kept in the supplied ZIP. After cloning the repository, run:
 
 ```sh
 python3 scripts/unpack_evidence.py
 ```
 
-This verifies the bundled SHA-256 checksums, then restores only `artifacts/` and `output/`. It does not overwrite repository source. Raw nuScenes files are excluded and must be obtained separately under the dataset's terms.
+When opening the extracted ZIP directly, its `artifacts/` and `output/` folders are already present and restoration is unnecessary.
+
+The restoration command verifies the bundled SHA-256 checksums, then restores only `artifacts/` and `output/`. It does not overwrite repository source. Raw nuScenes files are excluded and must be obtained separately under the dataset's terms.
 
 ## Docker: reproducible runtime
 
@@ -82,7 +84,7 @@ python -m pip install -e '.[dev,reconstruction,visualization]'
 python -m pytest
 ```
 
-The video renderer is a separate macOS authoring tool requiring the installed Samantha voice, `say`, `afinfo`, Pillow and `imageio-ffmpeg==0.6.0`. It is not needed for the Docker perception runtime. The delivered video includes its synthesized-narration disclosure, captions and complete command transcript.
+The video renderer is a separate authoring tool using Pillow, `imageio-ffmpeg==0.6.0` and the configured macOS fonts. The delivered video has no audio track. Explanatory captions, walkthrough notes and complete command logs are included. Media rendering is separate from the Docker perception runtime.
 
 ## Repository modules
 
@@ -130,6 +132,8 @@ Further limits include coarse 1 m voxels, approximate object-box interpolation, 
 - Motion correction and separate Poisson surface proposals, enabled in the selected profile.
 - CNN and U-Net completion models, loss computation and scene-disjoint evaluation.
 - Docker environment with 27 passing regression tests and recorded real-data execution.
-- Design report, narrated walkthrough, trained checkpoints and checksummed experiment evidence.
+- Design report, silent walkthrough, trained checkpoints and checksummed experiment evidence.
 
 Raw nuScenes data is supplied separately. The design report and accuracy results describe the measured behavior and its limitations.
+
+[Contents verification](docs/CONTENTS_CHECK.md) records the delivery checks for the silent video and complete experiment bundle.

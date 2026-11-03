@@ -72,4 +72,4 @@ These are sparse geometric agreement scores, separate from the learned completio
 - CPU macOS execution and native Linux ARM64 Docker execution were verified. Docker passed all 27 tests, ran real combined GT and reproduced the recommended checkpoint score on 16 frames. See `artifacts/final-walkthrough/transcript.json`. Full-dataset benchmarks remain unverified.
 - See `IMPLEMENTATION_UPDATES.md` for the inherited pipeline and assistance disclosure.
 
-![Held-out completion comparison](../artifacts/accuracy-benchmark-v2/accuracy-comparison.png)
+![Held-out completion comparison](../accuracy-comparison.png)

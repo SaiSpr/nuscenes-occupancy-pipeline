@@ -1,7 +1,7 @@
-"""Narrated, edited walkthrough from actual Docker logs and result images.
+"""Silent, edited walkthrough from actual Docker logs and result images.
 
 This is a programmatically rendered command walkthrough, not a live screen capture.
-Narration uses the installed macOS Samantha synthetic voice. Raw logs are retained.
+No audio is generated. Explanatory captions and raw command logs are retained.
 Requires Pillow and imageio-ffmpeg; media generation is separate from the runtime.
 """
 import json
@@ -39,7 +39,7 @@ def frame(title,subtitle):
     d.text((40,58),title,font=font(33,True),fill=FG)
     for i,line in enumerate(wrap(subtitle,font(19),1190)):d.text((40,109+i*25),line,font=font(19),fill=MUTED)
     d.line((40,668,1240,668),fill=(56,74,93),width=2)
-    d.text((40,684),'Actual command logs and artifacts | Edited walkthrough | Synthesized narration',font=font(16),fill=TEAL)
+    d.text((40,684),'Actual command logs and artifacts | Edited walkthrough | No audio',font=font(16),fill=TEAL)
     return im
 
 
@@ -94,8 +94,8 @@ def main():
     add(bullet_frame('A reproducible occupancy pipeline','Motion correction and Poisson reconstruction are both enabled.',[
       ('Ground truth','Real nuScenes LiDAR, time-aware scan alignment, ray evidence and separate surface proposals.'),
       ('Learning','A three-class U-Net completes a partially hidden occupancy grid.'),
-      ('Video provenance','Edited from real Docker command recordings. Narration is synthesized; full transcripts are included.')]),
-      'This walkthrough demonstrates the final occupancy pipeline. Motion correction and Poisson reconstruction are both enabled. We start by building the Docker environment, run the tests, generate ground truth from real nuScenes scans, and compute a model forward pass and loss. We then evaluate a trained checkpoint. This is an edited command walkthrough generated from actual recorded execution, with synthesized narration. It is not a live screen capture or a human presentation.')
+      ('Video format','Silent walkthrough of actual Docker command logs and result images, with explanatory captions.')]),
+      'This walkthrough demonstrates the final occupancy pipeline. Motion correction and Poisson reconstruction are both enabled. We start by building the Docker environment, run the tests, generate ground truth from real nuScenes scans, and compute a model forward pass and loss. We then evaluate a trained checkpoint. This is a silent edited walkthrough generated from actual recorded execution. Explanatory captions and complete command logs are included. It is not a live screen capture.')
     build=stages['Build reproducible environment']
     add(terminal_frame(build,'Clean declared environment; CPU PyTorch and Open3D are installed inside the image.'),
       'The first recorded command builds the reconstruction target from the Dockerfile. The Python base image is pinned by digest. CPU PyTorch, the project, regression tools and Open3D are installed in the image, so the host Python environment is not required to run the pipeline. On this ARM Mac we use native Linux ARM64 wheels. The AMD64 emulation attempt exposed an illegal-instruction failure and was not accepted. Build waiting time is edited out of the video; the transcript retains the complete output and actual duration.')
@@ -133,17 +133,14 @@ def main():
       ('Evidence limitations','Sparse reference scans, approximate box tracks, limited scenes and possible Poisson false surfaces.'),
       ('Reproducibility','Dockerfile, full logs, dependency versions, tests, manifests, checkpoint and report are included.')]),
       'The direct geometric comparison, with no box filling, measures sixty seven point four seven percent IoU for motion correction plus Poisson, versus sixty seven point two eight percent for motion correction alone. Only two scans are eligible, so this small gain should not be generalized. The model completion benchmark is separate and excludes Poisson proposals from its inputs and targets. Important remaining limitations include sparse reference geometry, approximate object tracks and only two test scenes. The source, report, configuration, checksums, dependency records and full execution transcripts are supplied for review.')
-    segments=[];captions=[];narration=[];elapsed=0.;counter=1
+    segments=[];captions=[];notes=[];elapsed=0.;counter=1
     for i,(im,text) in enumerate(chapters):
         prefix=OUT/f'chapter-{i:02d}';im.save(prefix.with_suffix('.png'))
         prefix.with_suffix('.txt').write_text(text)
-        subprocess.run(['say','-v','Samantha','-r','155','-f',str(prefix.with_suffix('.txt')),'-o',str(prefix.with_suffix('.aiff'))],check=True)
-        info=subprocess.run(['afinfo',str(prefix.with_suffix('.aiff'))],capture_output=True,text=True,check=True).stdout
-        duration=float(re.search(r'estimated duration:\s*([\d.]+)',info).group(1))+1.
+        duration=max(18.,len(text.split())/155.*60.+2.)
         segment=prefix.with_suffix('.mp4')
         subprocess.run([FFMPEG,'-hide_banner','-loglevel','error','-y','-loop','1','-framerate','15','-i',str(prefix.with_suffix('.png')),
-                        '-i',str(prefix.with_suffix('.aiff')),'-c:v','libx264','-preset','veryfast','-tune','stillimage','-pix_fmt','yuv420p',
-                        '-c:a','aac','-b:a','128k','-ar','44100','-ac','1','-af','apad=pad_dur=1','-shortest',str(segment)],check=True)
+                        '-t',str(duration),'-an','-c:v','libx264','-preset','veryfast','-tune','stillimage','-pix_fmt','yuv420p',str(segment)],check=True)
         probe=subprocess.run([FFMPEG,'-hide_banner','-i',str(segment)],capture_output=True,text=True)
         h,m,s=map(float,re.search(r'Duration:\s*(\d+):(\d+):([\d.]+)',probe.stderr).groups())
         segment_duration=h*3600+m*60+s
@@ -152,20 +149,22 @@ def main():
         for j,chunk in enumerate(chunks):
             start=elapsed+(duration-1)*j/len(chunks);end=elapsed+(duration-1)*(j+1)/len(chunks)
             captions.append(f'{counter}\n{timestamp(start)} --> {timestamp(end)}\n'+textwrap.fill(chunk,width=74)+'\n');counter+=1
-        narration.append(f'Chapter {i+1}\n{text}\n');elapsed+=segment_duration
+        notes.append(f'Chapter {i+1}\n{text}\n');elapsed+=segment_duration
         print(f'Rendered chapter {i+1}/{len(chapters)}',flush=True)
     listing=OUT/'segments.txt';listing.write_text('\n'.join("file '"+str(p)+"'" for p in segments)+'\n')
     srt=OUT/'captions.srt';srt.write_text('\n'.join(captions))
-    (OUT/'narration.txt').write_text('\n'.join(narration))
+    (OUT/'walkthrough-notes.txt').write_text('\n'.join(notes))
     joined=OUT/'joined.mp4'
     subprocess.run([FFMPEG,'-hide_banner','-loglevel','error','-y','-f','concat','-safe','0','-i',str(listing),'-c','copy',str(joined)],check=True)
     final=OUT/'walkthrough.mp4'
-    subprocess.run([FFMPEG,'-hide_banner','-loglevel','error','-y','-i',str(joined),'-i',str(srt),'-c:v','copy','-c:a','copy','-c:s','mov_text',
+    subprocess.run([FFMPEG,'-hide_banner','-loglevel','error','-y','-i',str(joined),'-i',str(srt),'-map','0:v:0','-map','1:0','-an','-c:v','copy','-c:s','mov_text',
                     '-metadata:s:s:0','language=eng','-movflags','+faststart',str(final)],check=True)
     decoded=subprocess.run([FFMPEG,'-hide_banner','-loglevel','error','-i',str(final),'-f','null','-'],capture_output=True,text=True)
     if decoded.returncode:raise RuntimeError(decoded.stderr)
+    probe=subprocess.run([FFMPEG,'-hide_banner','-i',str(final)],capture_output=True,text=True)
+    if re.search(r'Stream #.*Audio:',probe.stderr):raise RuntimeError('Silent walkthrough unexpectedly contains audio')
     manifest={'video':final.name,'chapters':len(chapters),'estimated_duration_seconds':round(elapsed,2),
-              'narration':'macOS Samantha synthesized voice','source':'Edited from actual recorded Docker commands, not a live screen capture',
+              'narration':'none','audio_streams':0,'source':'Edited from actual recorded Docker commands, not a live screen capture',
               'full_decode_passed':True,'subtitles':'captions.srt','width':W,'height':H}
     (OUT/'video-manifest.json').write_text(json.dumps(manifest,indent=2))
     print(json.dumps(manifest,indent=2),flush=True)

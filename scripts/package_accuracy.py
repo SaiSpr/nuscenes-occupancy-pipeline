@@ -15,8 +15,8 @@ def main():
     files=set()
     for folder in ('src','tests','configs','scripts'):
         files.update(p for p in (root/folder).rglob('*') if p.is_file() and '__pycache__' not in p.parts)
-    for name in ('README.md','pyproject.toml','Dockerfile','.dockerignore','.gitignore','SNAPSHOT_PROVENANCE.json',
-                 'docs/IMPLEMENTATION_UPDATES.md','docs/ACCURACY_RESULTS.md','docs/SUBMISSION.md','docs/ASSISTANCE.md'):
+    for name in ('README.md','accuracy-comparison.png','DESIGN_REPORT.pdf','walkthrough.mp4','pyproject.toml','Dockerfile','.dockerignore','.gitignore','SNAPSHOT_PROVENANCE.json',
+                 'docs/IMPLEMENTATION_UPDATES.md','docs/ACCURACY_RESULTS.md','docs/SUBMISSION.md','docs/ASSISTANCE.md','docs/CONTENTS_CHECK.md'):
         files.add(root/name)
     benchmark=root/'artifacts/accuracy-benchmark-v2'
     required=('plan.json','results.json','tests.txt','execution.log','accuracy-comparison.png',
@@ -46,7 +46,7 @@ def main():
         video=json.loads((walkthrough/'video-manifest.json').read_text())
         transcript=json.loads((walkthrough/'transcript.json').read_text())
         assert video['full_decode_passed'] and len(transcript)==7 and all(r['exit_code']==0 for r in transcript)
-        files.update(walkthrough/name for name in ('walkthrough.mp4','captions.srt','narration.txt','video-manifest.json',
+        files.update(walkthrough/name for name in ('walkthrough.mp4','captions.srt','walkthrough-notes.txt','video-manifest.json',
                      'transcript.json','transcript.txt','demo-summary.json','checkpoint-evaluation.json','combined-gt.png'))
         files.update((walkthrough/'predictions').glob('*.png'))
     checksums={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(files)}
