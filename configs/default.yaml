@@ -1,0 +1,53 @@
+project:
+  seed: 42
+
+paths:
+  # For real nuScenes runs, mount or set this to the nuScenes root that contains samples/, sweeps/, maps/, v1.0-mini/.
+  nuscenes_root: /data/nuscenes
+  output_dir: artifacts/occupancy_gt
+
+nuscenes:
+  version: v1.0-mini
+  split: mini_train
+  max_samples: 5
+  synthetic_if_missing: false
+  num_sweeps: 5  # aggregate 5 sweeps (~250ms window) for denser GT on real nuScenes data
+
+grid:
+  # Laptop-friendly default: 80 x 80 x 6 = 38,400 voxels per sample.
+  # Axis convention: saved occupancy grid is [Z, Y, X].
+  x_min: -40.0
+  x_max: 40.0
+  y_min: -40.0
+  y_max: 40.0
+  z_min: -3.0
+  z_max: 3.0
+  voxel_size: 1.0
+  min_points_per_voxel: 1
+
+gt:
+  # Initial scope: 1 = occupied surface observed by LiDAR, 0 = unknown/not observed.
+  label_policy: occupied_unknown
+  include_point_counts: true
+  ray_casting: false  # set true to enable free-space labeling (0=unknown,1=occupied,2=free)
+
+model:
+  name: tiny_3d_cnn
+  in_channels: 1
+  hidden_channels: 4
+  out_channels: 1
+
+pipeline:
+  batch_size: 1
+  device: cpu
+  threshold: 0.5
+
+training:
+  epochs: 10
+  lr: 1.0e-3
+  val_split: 0.2
+  num_workers: 0
+  batch_size: 1
+  checkpoint_dir: artifacts/checkpoints
+  log_interval: 1
+
