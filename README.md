@@ -136,4 +136,4 @@ Further limits include coarse 1 m voxels, approximate object-box interpolation, 
 
 Raw nuScenes data is supplied separately. The design report and accuracy results describe the measured behavior and its limitations.
 
-[Contents verification](docs/CONTENTS_CHECK.md) records the delivery checks for the silent video and complete experiment bundle.
+[Contents verification](docs/CONTENTS_CHECK.md) records the delivery checks for the video and complete experiment bundle.
